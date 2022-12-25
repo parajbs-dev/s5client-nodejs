@@ -1,13 +1,13 @@
 ---
 
-# S5-Client NodeJS SDK
+# S5 Client NodeJS SDK
 
-An S5-Client in nodejs for Decentralized content-addressed storage network S5.
+An S5 Client in nodejs for Decentralized content-addressed storage network S5.
 
 ## Installing
 
 1. Clone this repo.
-2. cd s5-client-nodejs
+2. cd s5client-nodejs
 3. npm install
 
 ## Documentation
