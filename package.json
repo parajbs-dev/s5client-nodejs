@@ -1,8 +1,8 @@
 {
-  "name": "s5-client-nodejs",
+  "name": "s5client-nodejs",
   "version": "0.5.0_beta1",
-  "description": "s5-client for Decentralized content-addressed storage network S5",
-  "repository": "https://github.com/parajbs-dev/s5-client-nodejs",
+  "description": "S5 client for Decentralized content-addressed storage network S5",
+  "repository": "https://github.com/parajbs-dev/s5client-nodejs",
   "main": "index.js",
   "scripts": {
     "test": "jest",
