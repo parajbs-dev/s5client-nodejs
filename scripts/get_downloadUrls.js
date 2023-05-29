@@ -1,7 +1,7 @@
 /**
- * Demo script that gets metadata for all S5 cidss passed in as CLI arguments.
+ * Demo script that gets download Urls for all S5 cidss passed in as CLI arguments.
  *
- * Example usage: node scripts/get_metadata.js <cid>
+ * Example usage: node scripts/get_downloadUrls.js <cid>
  */
 
 const process = require("process");
@@ -15,7 +15,7 @@ const client = new S5Client(`${portalUrl}`);
 const promises = process.argv
   // Ignore the first two arguments.
   .slice(2)
-  .map(async (cid) => await client.getMetadata(cid));
+  .map(async (cid) => await client.getDownloadUrls(cid));
 
 (async () => {
   const results = await Promise.allSettled(promises);

@@ -12,6 +12,8 @@
 
   const portalUrl = defaultS5PortalUrl;
   const client = new S5Client(`${portalUrl}`);
+  // const client = new S5Client("", { portalUrl: `${portalUrl}` });
+
   const defaultCid = "z6e5pNnenj1z8929xQmXmf4M5iQgec8rS8bWvFiWL5Zxv336qSqjv";
   let usedCid;
 
@@ -27,11 +29,12 @@
   async function deleteCid(cid) {
     await client
       .deleteCid(cid)
-      .then(() => {
-        console.log("\n\n\n1. use deleteCid to delete a S5 cid from a portal.");
+      .then((responseMessage) => {
+        console.log("\nDelete = " + responseMessage);
       })
       .catch((err) => {
-        console.log("\n1. Get Error: ", err.response.data);
+        console.log("\nDelete = failed");
+        console.log("\nError: ", err.response.data);
       });
   }
 

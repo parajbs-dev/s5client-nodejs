@@ -15,8 +15,11 @@ if (!fs.existsSync(dir)) {
 
 (async () => {
   const { S5Client, defaultS5PortalUrl } = require("..");
+
   const portalUrl = defaultS5PortalUrl;
   const client = new S5Client(`${portalUrl}`);
+  // const client = new S5Client("", { portalUrl: `${portalUrl}` });
+
   const defaultCid = "z6e78acvH3M4PFaFzeA67UDpje2uYHai3LPSFQWs2WNinqpFzQYTa";
   const defaultDownloadPath = dir + "testdownload.mp4";
   let usedPath;

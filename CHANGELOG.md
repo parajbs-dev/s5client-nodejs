@@ -16,7 +16,7 @@ Types of changes:
 
 ## Unreleased
 
-## [0.5.0-beta1]
+## [0.5.0-beta2]
 
 ### Added
 

@@ -7,14 +7,11 @@
 const fs = require("fs");
 const process = require("process");
 
-const { S5Client } = require("..");
+const { S5Client, defaultS5PortalUrl } = require("..");
 
-const client = new S5Client("", {
-  portalUrl: "http://127.0.0.1:5522",
-  customDirname: "start",
-  tryFiles: ["index.html"],
-  errorPages: { 404: "/404.html" },
-});
+const portalUrl = defaultS5PortalUrl;
+const client = new S5Client(`${portalUrl}`);
+// const client = new S5Client("", { portalUrl: `${portalUrl}` });
 
 const promises = process.argv
   // Ignore the first two arguments.

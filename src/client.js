@@ -1,9 +1,18 @@
 const axios = require("axios");
 
-const { makeUrl } = require("./utils.js");
+const { convertDownloadDirectoryInputCid, getAllInfosFromCid, makeUrl } = require("s5-utils-nodejs");
 
-const { downloadData, downloadFile, getMetadata } = require("./download.js");
-const { uploadData, uploadFile, uploadDirectory } = require("./upload.js");
+const {
+  downloadData,
+  downloadFile,
+  downloadDirectory,
+  getCidUrl,
+  getMetadata,
+  getStorageLocations,
+  getDownloadUrls,
+} = require("./download.js");
+
+const { uploadFromUrl, uploadData, uploadFile, uploadDirectory, uploadWebapp } = require("./upload.js");
 const { pinCid } = require("./pin.js");
 const { deleteCid } = require("./delete.js");
 
@@ -40,7 +49,11 @@ class S5Client {
     // Download
     this.downloadData = downloadData.bind(this);
     this.downloadFile = downloadFile.bind(this);
+    this.downloadDirectory = downloadDirectory.bind(this);
+    this.getCidUrl = getCidUrl.bind(this);
     this.getMetadata = getMetadata.bind(this);
+    this.getStorageLocations = getStorageLocations.bind(this);
+    this.getDownloadUrls = getDownloadUrls.bind(this);
 
     // Delete
     this.deleteCid = deleteCid.bind(this);
@@ -49,9 +62,17 @@ class S5Client {
     this.pinCid = pinCid.bind(this);
 
     // Upload
+    this.uploadFromUrl = uploadFromUrl.bind(this);
     this.uploadData = uploadData.bind(this);
     this.uploadFile = uploadFile.bind(this);
     this.uploadDirectory = uploadDirectory.bind(this);
+    this.uploadWebapp = uploadWebapp.bind(this);
+
+    // Tools
+    this.tools = {
+      convertDownloadDirectoryInputCid: convertDownloadDirectoryInputCid,
+      getAllInfosFromCid: getAllInfosFromCid,
+    };
   }
 
   /**
@@ -60,8 +81,10 @@ class S5Client {
    */
   executeRequest(config) {
     let url = config.url;
+
     if (!url) {
-      url = makeUrl(config.portalUrl, config.endpointPath, config.extraPath ? config.extraPath : "");
+      let url1 = makeUrl(config.portalUrl, config.endpointPath, config.extraPath ? config.extraPath : "");
+      url = `${url1}${config.authToken ? `?auth_token=${config.authToken}` : ""}`;
     }
 
     // Build headers.
@@ -108,6 +131,3 @@ function buildRequestHeaders(baseHeaders, customUserAgent, customCookie, s5ApiKe
 // Export the client.
 
 module.exports = { S5Client, buildRequestHeaders };
-
-// Get the following files to run or the client's methods won't be defined.
-require("./download_directory.js");

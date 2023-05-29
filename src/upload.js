@@ -1,15 +1,51 @@
 "use strict";
-
-const FormData = require("form-data");
 const fs = require("fs");
 const p = require("path");
-const { Blake3Hasher } = require("@napi-rs/blake-hash");
+const FormData = require("form-data");
 const tus = require("tus-js-client");
 const { DetailedError } = require("tus-js-client");
 
-const { DEFAULT_UPLOAD_OPTIONS, DEFAULT_UPLOAD_DIRECTORY_OPTIONS, TUS_CHUNK_SIZE } = require("./defaults");
-const { getFileMimeType, makeUrl, walkDirectory } = require("./utils");
-const { mhashBlake3Default, cidTypeRaw } = require("./constants");
+const {
+  calculateB3hashFromFile,
+  generateMHashFromB3hash,
+  convertMHashToB64url,
+  generateCIDFromMHash,
+  encodeCIDWithPrefixZ,
+  walkDirectory,
+  makeUrl,
+  getFileMimeType,
+} = require("s5-utils-nodejs");
+
+const {
+  DEFAULT_UPLOAD_OPTIONS,
+  DEFAULT_UPLOAD_DIRECTORY_OPTIONS,
+  DEFAULT_DIRECTORY_NAME,
+  DEFAULT_UPLOAD_FROM_URL_OPTIONS,
+} = require("./defaults");
+
+/**
+ * Uploads a file from a URL.
+ *
+ * @param this - The instance of the S5Client class.
+ * @param dataurl - The URL of the file to be uploaded to S5-Network.
+ * @param customOptions - Optional custom upload options.
+ * @returns A promise that resolves to the AxiosResponse object representing the upload response.
+ */
+const uploadFromUrl = async function (dataurl, customOptions = {}) {
+  // Merge the default upload options, custom options from the instance, and any provided custom options
+  const opts = { ...DEFAULT_UPLOAD_FROM_URL_OPTIONS, ...this.customOptions, ...customOptions };
+
+  const params = { url: dataurl };
+
+  // Execute the request to upload from the URL
+  const response = await this.executeRequest({
+    ...opts,
+    method: "post",
+    params,
+  });
+
+  return response.data;
+};
 
 /**
  * Uploads in-memory data to S5-Network.
@@ -68,9 +104,9 @@ async function uploadSmallFile(client, stream, filename, opts) {
 async function uploadLargeFile(client, path, stream, filename, filesize, opts) {
   let upload = null;
   let uploadIsRunning = false;
+  const endpointLargeUpload = `${opts.endpointLargeUpload}${opts.authToken ? `?auth_token=${opts.authToken}` : ""}`;
 
-  const url = makeUrl(opts.portalUrl, opts.endpointLargeUpload);
-  const chunkSize = TUS_CHUNK_SIZE;
+  const url = makeUrl(opts.portalUrl, endpointLargeUpload);
 
   const askToResumeUpload = function (previousUploads, currentUpload) {
     if (previousUploads.length === 0) return;
@@ -103,36 +139,18 @@ async function uploadLargeFile(client, path, stream, filename, filesize, opts) {
       opts.onUploadProgress(progress, { loaded: bytesSent, total: bytesTotal });
     };
 
-  const b3hash = await new Promise((resolve, reject) => {
-    const hasher = new Blake3Hasher();
-    stream.on("error", (err) => reject(err));
-    stream.on("data", (chunk) => hasher.update(chunk));
-    stream.on("end", () => resolve(hasher.digestBuffer()));
-  });
+  const b3hash = await calculateB3hashFromFile(path);
+  const mhash = generateMHashFromB3hash(b3hash);
+  const cid = generateCIDFromMHash(mhash, path);
 
-  const hash = Buffer.concat([Buffer.alloc(1, mhashBlake3Default), b3hash]);
-  const cid = Buffer.concat([Buffer.alloc(1, cidTypeRaw), hash, numberToBuffer(fs.statSync(path).size)]);
-
-  function numberToBuffer(value) {
-    const view = Buffer.alloc(16);
-    let lastIndex = 15;
-    for (var index = 0; index <= 15; ++index) {
-      if (value % 256 !== 0) {
-        lastIndex = index;
-      }
-      view[index] = value % 256;
-      value = value >> 8;
-    }
-    return view.subarray(0, lastIndex + 1);
-  }
+  const mHashBase64url = convertMHashToB64url(mhash);
+  const zCid = encodeCIDWithPrefixZ(cid);
 
   return new Promise((resolve, reject) => {
     const tusOpts = {
       endpoint: url,
-      chunkSize: chunkSize,
-      //     retryDelays: opts.retryDelays,
       metadata: {
-        hash: hash.toString("base64url"),
+        hash: mHashBase64url,
         filename,
         filetype: getFileMimeType(filename),
       },
@@ -151,7 +169,7 @@ async function uploadLargeFile(client, path, stream, filename, filesize, opts) {
         }
 
         console.log("Upload finished.");
-        console.log("CID:", "u" + cid.toString("base64url"));
+        console.log(zCid);
       },
     };
 
@@ -207,11 +225,12 @@ const uploadDirectory = async function (path, customOptions = {}) {
   }
 
   // Use either the custom dirname, or the last portion of the path.
-  let filename = opts.customDirname || p.basename(path);
+  let filename = opts.customDirname || p.basename(path) || DEFAULT_DIRECTORY_NAME;
   if (filename.startsWith("/")) {
     filename = filename.slice(1);
   }
   const params = { filename };
+  params.name = filename;
   if (opts.tryFiles) {
     params.tryfiles = JSON.stringify(opts.tryFiles);
   }
@@ -233,10 +252,83 @@ const uploadDirectory = async function (path, customOptions = {}) {
     },
     params,
   });
-
   const responsedS5Cid = response.data.cid;
 
   return `${responsedS5Cid}`;
 };
 
-module.exports = { uploadData, uploadFile, uploadDirectory };
+/**
+ * Uploads a WebApp directory from the local filesystem to S5-network.
+ *
+ * @param {string} path - The path of the directory to upload.
+ * @param {Object} [customOptions] - Configuration options.
+ * @param {Object} [customOptions.disableDefaultPath=false] - If the value of `disableDefaultPath` is `true` no content is served if the s5file is accessed at its root path.
+ * @returns - The S5 cid.
+ */
+const uploadWebapp = async function (path, customOptions = {}) {
+  const opts = { ...DEFAULT_UPLOAD_DIRECTORY_OPTIONS, ...this.customOptions, ...customOptions };
+
+  // Check if there is a directory at given path.
+  const stat = await fs.promises.stat(path);
+  if (!stat.isDirectory()) {
+    throw new Error(`Given path is not a directory: ${path}`);
+  }
+
+  const formData = new FormData();
+  path = p.resolve(path);
+  let basepath = path;
+  // Ensure the basepath ends in a slash.
+  if (!basepath.endsWith("/")) {
+    basepath += "/";
+    // Normalize the slash on non-Unix filesystems.
+    basepath = p.normalize(basepath);
+  }
+
+  for (const file of walkDirectory(path)) {
+    // Remove the dir path from the start of the filename if it exists.
+    let filename = file;
+    if (file.startsWith(basepath)) {
+      let filenametext = file.replace(basepath, "");
+      filename = filenametext.replace(/\\/g, "/");
+    }
+    formData.append(filename, fs.createReadStream(file), { filepath: filename });
+  }
+
+  // Use either the custom dirname, or the last portion of the path.
+  let filename = opts.customDirname || p.basename(path) || DEFAULT_DIRECTORY_NAME;
+  if (filename.startsWith("/")) {
+    filename = filename.slice(1);
+  }
+  const params = { filename };
+  params.name = filename;
+  if (opts.tryFiles) {
+    params.tryfiles = JSON.stringify(opts.tryFiles);
+  } else {
+    params.tryfiles = JSON.stringify(["index.html"]);
+  }
+  if (opts.errorPages) {
+    params.errorpages = JSON.stringify(opts.errorPages);
+  } else {
+    params.errorpages = JSON.stringify({ 404: "/404.html" });
+  }
+  if (opts.disableDefaultPath) {
+    params.disableDefaultPath = true;
+  }
+
+  if (opts.dryRun) params.dryrun = true;
+
+  const response = await this.executeRequest({
+    ...opts,
+    method: "post",
+    data: formData,
+    headers: {
+      ...formData.getHeaders(),
+    },
+    params,
+  });
+  const responsedS5Cid = response.data.cid;
+
+  return `${responsedS5Cid}`;
+};
+
+module.exports = { uploadFromUrl, uploadData, uploadFile, uploadDirectory, uploadWebapp };

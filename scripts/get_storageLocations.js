@@ -1,7 +1,7 @@
 /**
- * Demo script that gets metadata for all S5 cidss passed in as CLI arguments.
+ * Demo script that gets Storage Locations for all S5 cidss passed in as CLI arguments.
  *
- * Example usage: node scripts/get_metadata.js <cid>
+ * Example usage: node scripts/get_storageLocations.js <cid>
  */
 
 const process = require("process");
@@ -15,13 +15,13 @@ const client = new S5Client(`${portalUrl}`);
 const promises = process.argv
   // Ignore the first two arguments.
   .slice(2)
-  .map(async (cid) => await client.getMetadata(cid));
+  .map(async (cid) => await client.getStorageLocations(cid));
 
 (async () => {
   const results = await Promise.allSettled(promises);
   results.forEach((result) => {
     if (result.status === "fulfilled") {
-      console.log(result.value);
+      console.log(JSON.stringify(result.value, null, "  "));
     } else {
       console.log(result.reason.response.data);
     }

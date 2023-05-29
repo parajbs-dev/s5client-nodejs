@@ -1,6 +1,6 @@
 "use strict";
 
-const { defaultOptions } = require("./utils");
+const { defaultOptions } = require("s5-utils-nodejs");
 
 /**
  * The tus chunk size is (32MiB - encryptionOverhead) * dataPieces, set.
@@ -17,10 +17,16 @@ const DEFAULT_TUS_RETRY_DELAYS = [0, 5000, 15000, 60000, 300000, 600000];
  * The portal file field name.
  */
 const PORTAL_FILE_FIELD_NAME = "file";
+
 /**
  * The portal directory file field name.
  */
 const PORTAL_DIRECTORY_FILE_FIELD_NAME = "files[]";
+
+/**
+ * The default directory name.
+ */
+const DEFAULT_DIRECTORY_NAME = "dist";
 
 const DEFAULT_BASE_OPTIONS = {
   APIKey: "",
@@ -45,6 +51,18 @@ const DEFAULT_DELETE_OPTIONS = {
 
 const DEFAULT_GET_METADATA_OPTIONS = {
   ...defaultOptions("/s5/metadata"),
+};
+
+const DEFAULT_GET_STORAGE_LOCATIONS_OPTIONS = {
+  ...defaultOptions("/s5/debug/storage_locations"),
+};
+
+const DEFAULT_GET_DOWNLOAD_URLS_OPTIONS = {
+  ...defaultOptions("/s5/debug/download_urls"),
+};
+
+const DEFAULT_UPLOAD_FROM_URL_OPTIONS = {
+  ...defaultOptions("/s5/import/http"),
 };
 
 const DEFAULT_UPLOAD_OPTIONS = {
@@ -108,12 +126,16 @@ const DEFAULT_SET_ENTRY_OPTIONS = {
 
 module.exports = {
   TUS_CHUNK_SIZE,
+  DEFAULT_DIRECTORY_NAME,
   DEFAULT_BASE_OPTIONS,
   DEFAULT_DOWNLOAD_OPTIONS,
   DEFAULT_UPLOAD_TUS_OPTIONS,
   DEFAULT_PIN_OPTIONS,
   DEFAULT_DELETE_OPTIONS,
   DEFAULT_GET_METADATA_OPTIONS,
+  DEFAULT_GET_STORAGE_LOCATIONS_OPTIONS,
+  DEFAULT_GET_DOWNLOAD_URLS_OPTIONS,
+  DEFAULT_UPLOAD_FROM_URL_OPTIONS,
   DEFAULT_UPLOAD_OPTIONS,
   DEFAULT_UPLOAD_DIRECTORY_OPTIONS,
   DEFAULT_GET_ENTRY_OPTIONS,

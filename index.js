@@ -9,7 +9,7 @@ const {
   uriS5Prefix,
   formatS5Link,
   onUploadProgress,
-} = require("./src/utils");
+} = require("s5-utils-nodejs");
 
 module.exports = {
   S5Client,

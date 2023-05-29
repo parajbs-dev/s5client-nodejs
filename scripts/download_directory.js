@@ -12,6 +12,8 @@
 
   const portalUrl = defaultS5PortalUrl;
   const client = new S5Client(`${portalUrl}`);
+  // const client = new S5Client("", { portalUrl: `${portalUrl}` });
+
   const defaultPath = "tmp/video";
   const defaultCid = "z31rccxzvfW5qumeRyrHNZjH6hn78y4Z1MT9ZqvABR6odfoy";
   let usedPath;
@@ -31,8 +33,10 @@
 
   // 1. use downloadDirectory to get all files and subdirectorys from S5-net.
   async function downloadDirectory(path, cid) {
+    const inputCid = await client.tools.convertDownloadDirectoryInputCid(cid);
+
     await client
-      .downloadDirectory(path, cid)
+      .downloadDirectory(path, inputCid)
       .then(() => {
         console.log("\n\n\n1. use downloadDirectory to get all files and subdirectorys from S5-net.");
       })

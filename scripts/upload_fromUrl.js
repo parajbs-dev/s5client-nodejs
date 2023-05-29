@@ -1,7 +1,7 @@
 /**
- * Demo script that uploads data passed in as CLI arguments.
+ * Demo script that uploads form Url passed in as CLI arguments.
  *
- * Example usage: node scripts/upload_data.js <filename> <data-string>
+ * Example usage: node scripts/upload_fromUrl.js <dataUrl>
  */
 
 const process = require("process");
@@ -13,10 +13,11 @@ const client = new S5Client(`${portalUrl}`);
 // const client = new S5Client("", { portalUrl: `${portalUrl}` });
 
 (async () => {
-  const filename = process.argv[2];
-  const data = process.argv[3];
+  if (process.argv[2] != null) {
+    const dataUrl = process.argv[2];
 
-  const cid = await client.uploadData(data, filename);
+    const cid = await client.uploadFromUrl(dataUrl);
 
-  console.log(cid);
+    console.log(cid);
+  }
 })();

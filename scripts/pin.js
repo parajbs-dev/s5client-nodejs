@@ -12,6 +12,8 @@
 
   const portalUrl = defaultS5PortalUrl;
   const client = new S5Client(`${portalUrl}`);
+  // const client = new S5Client("", { portalUrl: `${portalUrl}` });
+
   const defaultCid = "z6e78acvH3M4PFaFzeA67UDpje2uYHai3LPSFQWs2WNinqpFzQYTa";
   let usedCid;
 
@@ -27,11 +29,12 @@
   async function pinCid(cid) {
     await client
       .pinCid(cid)
-      .then(() => {
-        console.log("\n\n\n1. use pinCid to pin a S5 cid to a portal.");
+      .then((responseMessage) => {
+        console.log("\nPin = " + responseMessage);
       })
       .catch((err) => {
-        console.log("\n1. Get Error: ", err.response.data);
+        console.log("\nPin = failed");
+        console.log("\nError: ", err.response.data);
       });
   }
 

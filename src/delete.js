@@ -11,11 +11,29 @@ const { DEFAULT_DELETE_OPTIONS } = require("./defaults");
 const deleteCid = async function (cid, customOptions = {}) {
   const opts = { ...DEFAULT_DELETE_OPTIONS, ...this.customOptions, ...customOptions };
 
-  await this.executeRequest({
-    ...opts,
-    method: "delete",
-    extraPath: cid,
-  });
+  // Variable to store the result of the delete operation
+  let responseMessage;
+
+  try {
+    // Execute the delete request asynchronously
+    const response = await this.executeRequest({
+      ...opts,
+      method: "delete",
+      extraPath: cid,
+    });
+
+    // Check the response status and set responseMessage accordingly
+    if (response.status === 200) {
+      responseMessage = "successful";
+    } else {
+      responseMessage = "failed";
+    }
+
+    return responseMessage;
+  } catch (e) {
+    console.log(e.message);
+    return (responseMessage = "failed");
+  }
 };
 
 module.exports = { deleteCid };

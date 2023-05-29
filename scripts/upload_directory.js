@@ -1,20 +1,18 @@
 /**
- * Demo script that uploads all paths passed in as CLI arguments.
+ * Demo script that upload a directory passed in as CLI arguments.
  *
- * Example usage: node scripts/upload.js <path-to-upload>
+ * Example usage: node scripts/upload_directory.js <path-to-upload>
  */
 
 const fs = require("fs");
 const process = require("process");
 
-const { S5Client } = require("..");
+const { S5Client, defaultS5PortalUrl } = require("..");
 
-const client = new S5Client("", {
-  portalUrl: "http://127.0.0.1:5522",
-  customDirname: "start",
-  tryFiles: ["index.html"],
-  errorPages: { 404: "/404.html" },
-});
+const portalUrl = defaultS5PortalUrl;
+const client = new S5Client(`${portalUrl}`);
+// const client = new S5Client("", { portalUrl: `${portalUrl}` });
+// const client = new S5Client("", { portalUrl: `${portalUrl}`, customDirname: "testdir" });
 
 const promises = process.argv
   // Ignore the first two arguments.
