@@ -128,7 +128,7 @@ const getCidUrl = async function (cid, customOptions) {
   const opts = { ...DEFAULT_DOWNLOAD_OPTIONS, ...this.customOptions, ...customOptions };
 
   // Obtain the portal URL asynchronously
-  const portalUrl = await this.portalUrl();
+  const portalUrl = await opts.portalUrl;
 
   // Create the resolve URL by concatenating the portal URL, cid, and optional auth token query string
   const resolveUrl = portalUrl + "/" + cid + (opts.authToken ? `?auth_token=${opts.authToken}` : "");
